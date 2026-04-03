@@ -1,0 +1,13 @@
+# dependencies
+.env
+node_modules/
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+serviceAccountKey.json/
+
+# Firebase / Google credentials
+*.json
+**/firebase-adminsdk-*.json

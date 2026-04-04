@@ -9,5 +9,4 @@ expo-env.d.ts
 serviceAccountKey.json/
 
 # Firebase / Google credentials
-*.json
 **/firebase-adminsdk-*.json

@@ -24,6 +24,8 @@ export interface Restaurant {
   restaurantName: string;
   restaurantNameLower: string;
 
+  menuItemNamesLower: string[];
+
    address: {
     text: string;
     lat: number;

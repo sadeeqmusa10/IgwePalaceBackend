@@ -4,6 +4,11 @@ import { Restaurant } from "../models/restaurant";
 
 const db = firestore();
 
+/*
+==============================
+GET SINGLE RESTAURANT
+==============================
+*/
 export const getRestaurant = async (
   req: Request,
   res: Response
@@ -28,74 +33,99 @@ export const getRestaurant = async (
       ...doc.data(),
     });
 
-    return;
   } catch (error) {
     console.error("Get restaurant failed:", error);
 
     res.status(500).json({
       message: "Something went wrong",
     });
-
-    return;
   }
 };
 
-export const searchRestaurants = async (req: Request, res: Response) => {
+
+/*
+==============================
+SEARCH RESTAURANTS BY FOOD
+==============================
+*/
+export const searchRestaurants = async (
+  req: Request,
+  res: Response
+) => {
   try {
-    const city = (req.params.city || "");
-    const searchQuery = ((req.query.searchQuery as string) || "")
-      .trim()
-      .toLowerCase();
-    const selectedCuisines = ((req.query.selectedCuisines as string) || "")
-      .split(",")
-      .map((c) => c.trim())
-      .filter(Boolean);
-    const sortOption = (req.query.sortOption as string) || "lastUpdated";
-    const page = parseInt(req.query.page as string) || 1;
+
+    const foodParam = req.params.food;
+
+    const food =
+      typeof foodParam === "string"
+        ? foodParam.trim().toLowerCase()
+        : "";
+
+    const searchQueryParam = req.query.searchQuery;
+
+    const searchQuery =
+      typeof searchQueryParam === "string"
+        ? searchQueryParam.trim().toLowerCase()
+        : "";
+
+    const pageParam = req.query.page;
+
+    const page =
+      typeof pageParam === "string"
+        ? parseInt(pageParam)
+        : 1;
+
     const pageSize = 10;
 
-    if (!city) {
-      res.status(400).json({ message: "City parameter is required" });
-       return;
+    if (!food) {
+      res.status(400).json({
+        message: "Food parameter required",
+      });
+      return;
     }
 
-    // Allowed sort options
-    const allowedSortOptions = ["lastUpdated", "restaurantName", "rating"];
-    const sortField = allowedSortOptions.includes(sortOption)
-      ? sortOption
-      : "lastUpdated";
+    let query: firestore.Query =
+      db.collection("restaurant")
+        .where(
+          "menuItemNamesLower",
+          "array-contains",
+          food
+        );
 
-    let query: firestore.Query<firestore.DocumentData> = db
-      .collection("restaurant")
-      .where("cityLower", "==", city); // <-- use cityLower field for case-insensitive search
-
-    // Filter by cuisines
-    if (selectedCuisines.length > 0) {
-      query = query.where("cuisines", "array-contains-any", selectedCuisines);
-    }
-
-    // Filter by restaurant name
     if (searchQuery) {
       query = query
-        .where("restaurantNameLower", ">=", searchQuery)
-        .where("restaurantNameLower", "<=", searchQuery + "\uf8ff");
+        .where(
+          "restaurantNameLower",
+          ">=",
+          searchQuery
+        )
+        .where(
+          "restaurantNameLower",
+          "<=",
+          searchQuery + "\uf8ff"
+        );
     }
 
-    // Sorting
-    query = query.orderBy(sortField, "asc");
+    const countSnap =
+      await query.count().get();
 
-    // Count total results
-    const countSnap = await query.count().get();
-    const total = countSnap.data().count;
+    const total =
+      countSnap.data().count;
 
-    // Pagination
-    const offset = (page - 1) * pageSize;
-    const restaurantDocs = await query.offset(offset).limit(pageSize).get();
+    const offset =
+      (page - 1) * pageSize;
 
-    const restaurants: Restaurant[] = restaurantDocs.docs.map((doc) => ({
-      ...(doc.data() as Restaurant),
-      id: doc.id,
-    }));
+    const restaurantDocs =
+      await query
+        .offset(offset)
+        .limit(pageSize)
+        .get();
+
+    const restaurants: Restaurant[] =
+      restaurantDocs.docs.map((doc) => ({
+        ...(doc.data() as Restaurant),
+        id: doc.id,
+      }));
 
     res.json({
       data: restaurants,
@@ -105,9 +135,17 @@ export const searchRestaurants = async (req: Request, res: Response) => {
         pages: Math.ceil(total / pageSize),
       },
     });
+
   } catch (error) {
-    console.error("Search restaurants failed:", error);
-    res.status(500).json({ message: "Something went wrong!" });
+
+    console.error(
+      "Search restaurants failed:",
+      error
+    );
+
+    res.status(500).json({
+      message: "Something went wrong!",
+    });
+
   }
 };
-

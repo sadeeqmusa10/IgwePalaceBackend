@@ -160,6 +160,9 @@ const createAdminRestaurant = async (req: Request, res: Response) => {
       deliveryTimeMinutes: Number(estimatedDeliveryTime),
       deliveryPrice: Number(deliveryPrice),
 
+menuItemNamesLower: parsedMenuItems.flatMap((item: any) =>
+  item.name.toLowerCase().split(" ")
+),
       menuItem: parsedMenuItems.map(
         (item: any, index: number) => ({
           id: item.id ?? crypto.randomUUID(),
@@ -288,6 +291,10 @@ if (!restaurantId) {
           ? req.body.restaurantName.toLowerCase()
           : existingRestaurant.restaurantNameLower,
 
+menuItemNamesLower: parsedMenuItems.flatMap((item: any) =>
+  item.name.toLowerCase().split(" ")
+),
+
       address: {
         text: parsedAddress.text,
         lat: Number(parsedAddress.lat),
@@ -316,6 +323,8 @@ if (!restaurantId) {
         undefined
           ? Number(req.body.estimatedDeliveryTime)
           : existingRestaurant.deliveryTimeMinutes,
+
+          
 
       menuItem: (parsedMenuItems || []).map(
         (item: any, index: number) => ({

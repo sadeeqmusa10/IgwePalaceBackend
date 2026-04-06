@@ -5,7 +5,6 @@ import "dotenv/config";
 import { admin } from "./config/firebase";
 
 import MyUserRoute from "./routes/MyUserRoute";
-import MyRestaurantRoute from "./routes/MyRestaurantRoute";
 import OrderRoutes from "./routes/OrderRoute";
 import RestaurantRoutes from "./routes/RestaurantRoutes";
 import AdminRoute from "./routes/AdminRoute";
@@ -53,9 +52,6 @@ app.use("/api/my/admin", AdminRoute);
 
 // USER ROUTES
 app.use("/api/my/user", MyUserRoute);
-
-// RESTAURANT OWNER ROUTES
-app.use("/api/my/restaurant", MyRestaurantRoute);
 
 // PUBLIC RESTAURANTS
 app.use("/api/restaurant", RestaurantRoutes);

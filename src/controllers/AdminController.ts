@@ -101,7 +101,7 @@ const createAdminRestaurant = async (req: Request, res: Response) => {
       country,
       restaurantAddress,
       deliveryPrice,
-      estimatedDeliveryTime,
+      deliveryTimeMinutes,
       menuItem,
     } = req.body;
 
@@ -157,7 +157,7 @@ const createAdminRestaurant = async (req: Request, res: Response) => {
       cityLower: city.toLowerCase(),
       country,
 
-      deliveryTimeMinutes: Number(estimatedDeliveryTime),
+      deliveryTimeMinutes: Number(deliveryTimeMinutes),
       deliveryPrice: Number(deliveryPrice),
 
 menuItemNamesLower: parsedMenuItems.flatMap((item: any) =>
@@ -319,9 +319,9 @@ menuItemNamesLower: parsedMenuItems.flatMap((item: any) =>
           : existingRestaurant.deliveryPrice,
 
       deliveryTimeMinutes:
-        req.body.estimatedDeliveryTime !==
+        req.body.deliveryTimeMinutes !==
         undefined
-          ? Number(req.body.estimatedDeliveryTime)
+          ? Number(req.body.deliveryTimeMinutes)
           : existingRestaurant.deliveryTimeMinutes,
 
           

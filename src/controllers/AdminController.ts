@@ -475,19 +475,28 @@ const getAllAdminOrders = async (req: Request, res: Response) => {
  * IMAGE UPLOAD
  * ===============================
  */
-const uploadImage = async (file?: Express.Multer.File) => {
-  if (!file || !file.buffer) {
-    console.log("No file buffer received — skipping upload");
+const uploadImage = async (
+  file?: Express.Multer.File
+): Promise<string> => {
+  try {
+    if (!file || !file.buffer) {
+      console.log("⚠️ No file buffer received");
+      return "";
+    }
+
+    const base64Image = file.buffer.toString("base64");
+
+    const dataURI = `data:${file.mimetype};base64,${base64Image}`;
+
+    const uploadResponse = await cloudinary.uploader.upload(
+      dataURI
+    );
+
+    return uploadResponse.secure_url;
+  } catch (error) {
+    console.error("Cloudinary upload error:", error);
     return "";
   }
-
-  const base64Image = file.buffer.toString("base64");
-
-  const dataURI = `data:${file.mimetype};base64,${base64Image}`;
-
-  const uploadResponse = await cloudinary.uploader.upload(dataURI);
-
-  return uploadResponse.secure_url;
 };
 
 export default {

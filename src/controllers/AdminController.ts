@@ -207,21 +207,18 @@ menuItemNamesLower: parsedMenuItems.flatMap((item: any) =>
  * UPDATE RESTAURANT (ADMIN / MANAGER)
  * ===============================
  */
-const updateAdminRestaurant = async (req: Request, res: Response) => {
+const updateAdminRestaurant = async (
+  req: Request,
+  res: Response
+) => {
   try {
     await assertAdminOrManager(req.firebaseId);
 
-    const restaurantIdParam = req.params.restaurantId;
-
-const restaurantId = Array.isArray(restaurantIdParam)
-  ? restaurantIdParam[0]
-  : restaurantIdParam;
-
-if (!restaurantId) {
-  return res.status(400).json({
-    message: "Invalid restaurant ID",
-  });
-}
+    /**
+     * SINGLE RESTAURANT ARCHITECTURE
+     * always use firebaseId
+     */
+    const restaurantId = req.firebaseId;
 
     const restaurantDoc = await db
       .collection("restaurant")
@@ -230,7 +227,7 @@ if (!restaurantId) {
 
     if (!restaurantDoc.exists) {
       return res.status(404).json({
-        message: "Restaurant not found!",
+        message: "Restaurant not found",
       });
     }
 
@@ -262,19 +259,30 @@ if (!restaurantId) {
 
     if (files?.length) {
       for (const file of files) {
-
         if (file.fieldname === "imageFile") {
-          updatedRestaurantImage =
+          const uploaded =
             await uploadImage(file);
+
+          if (uploaded)
+            updatedRestaurantImage =
+              uploaded;
         }
 
-        if (file.fieldname.startsWith("menuImage_")) {
+        if (
+          file.fieldname.startsWith(
+            "menuImage_"
+          )
+        ) {
           const index = Number(
             file.fieldname.split("_")[1]
           );
 
-          menuImageMap[index] =
+          const uploaded =
             await uploadImage(file);
+
+          if (uploaded)
+            menuImageMap[index] =
+              uploaded;
         }
       }
     }
@@ -291,18 +299,11 @@ if (!restaurantId) {
           ? req.body.restaurantName.toLowerCase()
           : existingRestaurant.restaurantNameLower,
 
-menuItemNamesLower: parsedMenuItems.flatMap((item: any) =>
-  item.name.toLowerCase().split(" ")
-),
-
-      address: {
-        text: parsedAddress.text,
-        lat: Number(parsedAddress.lat),
-        lng: Number(parsedAddress.lng),
-      },
+      address: parsedAddress,
 
       city:
-        req.body.city ?? existingRestaurant.city,
+        req.body.city ??
+        existingRestaurant.city,
 
       cityLower:
         req.body.city
@@ -324,27 +325,37 @@ menuItemNamesLower: parsedMenuItems.flatMap((item: any) =>
           ? Number(req.body.deliveryTimeMinutes)
           : existingRestaurant.deliveryTimeMinutes,
 
-          
+      menuItemNamesLower:
+        parsedMenuItems.flatMap(
+          (item: any) =>
+            item.name
+              .toLowerCase()
+              .split(" ")
+        ),
 
-      menuItem: (parsedMenuItems || []).map(
+      menuItem: parsedMenuItems.map(
         (item: any, index: number) => ({
-          id: item.id || crypto.randomUUID(),
+          id:
+            item.id ??
+            crypto.randomUUID(),
 
           name: item.name,
-          nameLower: item.name.toLowerCase(),
+          nameLower:
+            item.name.toLowerCase(),
 
-          description: item.description || "",
-          category: item.category || "",
+          description:
+            item.description || "",
+
+          category:
+            item.category || "",
 
           price: Number(item.price),
 
-          stars: item.stars
-            ? Number(item.stars)
-            : 0,
+          stars:
+            Number(item.stars) || 0,
 
-          review: item.review
-            ? Number(item.review)
-            : 0,
+          review:
+            Number(item.review) || 0,
 
           imageUrl:
             menuImageMap[index] ||
@@ -353,26 +364,27 @@ menuItemNamesLower: parsedMenuItems.flatMap((item: any) =>
         })
       ),
 
-      imageUrl: updatedRestaurantImage,
+      imageUrl:
+        updatedRestaurantImage,
 
       lastUpdated:
-        firestore.Timestamp.fromDate(
-          new Date()
-        ),
+        firestore.Timestamp.now(),
     };
 
     await db
       .collection("restaurant")
       .doc(restaurantId)
-      .set(updatedRestaurant, { merge: true });
+      .set(updatedRestaurant, {
+        merge: true,
+      });
 
-    return res.status(200).json(updatedRestaurant);
-  } catch (error: any) {
+    return res.json(updatedRestaurant);
+  } catch (error) {
     console.error("UPDATE ERROR:", error);
 
     return res.status(500).json({
       message:
-        "Something went wrong updating the restaurant!",
+        "Something went wrong updating restaurant",
     });
   }
 };
@@ -463,12 +475,19 @@ const getAllAdminOrders = async (req: Request, res: Response) => {
  * IMAGE UPLOAD
  * ===============================
  */
-const uploadImage = async (file: Express.Multer.File) => {
-  const base64Image = Buffer.from(file.buffer).toString("base64");
+const uploadImage = async (file?: Express.Multer.File) => {
+  if (!file || !file.buffer) {
+    console.log("No file buffer received — skipping upload");
+    return "";
+  }
+
+  const base64Image = file.buffer.toString("base64");
+
   const dataURI = `data:${file.mimetype};base64,${base64Image}`;
 
   const uploadResponse = await cloudinary.uploader.upload(dataURI);
-  return uploadResponse.url;
+
+  return uploadResponse.secure_url;
 };
 
 export default {
